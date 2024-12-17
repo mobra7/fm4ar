@@ -61,30 +61,14 @@ def load_dataset(config: dict) -> SpectraDataset:
     with h5py.File(file_path, "r") as f:
         theta = np.array(f["theta"][:n_samples])
         flux = np.array(f["flux"][:n_samples])
-        wlen = np.array(
-            f["wlen"] if len(f["wlen"].shape) == 1 else f["wlen"][:n_samples]
-        )
 
     # TODO: Add support for filtering the dataset, e.g., based on mean flux
 
-    # Ensure that wlen is 2D
-    if wlen.ndim == 1:
-        wlen = wlen[None, :]
 
     # Make sure the lengths match
     if theta.shape[0] != flux.shape[0]:
         raise ValueError(  # pragma: no cover
             "The number of samples does not match between `theta` and `flux`!"
-        )
-    if wlen.shape[0] != 1 and wlen.shape[0] != flux.shape[0]:
-        raise ValueError(  # pragma: no cover
-            "The number of samples does not match between `wlen` and `flux`! "
-            "`wlen` should have either the same length as `flux` or a single "
-            "wavelength for all spectra."
-        )
-    if wlen.shape[1] != flux.shape[1]:
-        raise ValueError(  # pragma: no cover
-            "The number of bins does not match between `wlen` and `flux`!"
         )
 
     # Construct the feature scaling transforms
@@ -95,7 +79,6 @@ def load_dataset(config: dict) -> SpectraDataset:
     dataset = SpectraDataset(
         theta=theta,
         flux=flux,
-        wlen=wlen,
         theta_scaler=theta_scaler,
     )
 

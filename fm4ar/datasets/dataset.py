@@ -21,7 +21,6 @@ class SpectraDataset(Dataset):
         self,
         theta: np.ndarray,
         flux: np.ndarray,
-        wlen: np.ndarray,
         theta_scaler: ThetaScaler | None = None,
     ) -> None:
         """
@@ -37,10 +36,6 @@ class SpectraDataset(Dataset):
                 Expected shape: (n_samples, dim_theta).
             flux: Array with the fluxes of the spectra.
                 Expected shape: (n_samples, dim_x).
-            wlen: Wavelengths to which the `flux` values correspond to.
-                Expected shape(s):
-                    - (1, dim_x): Same wavelength for all spectra.
-                    - (n_samples, dim_x): Different for each spectrum.
             theta_scaler: Scaler for the parameters `theta`. If None,
                 the identity scaler is used (i.e., no scaling).
         """
@@ -50,7 +45,6 @@ class SpectraDataset(Dataset):
         # Store constructor arguments
         self.theta = theta
         self.flux = flux
-        self.wlen = wlen
 
         # List of transformations that will be applied in __getitem__()
         # Each transform takes a dict (with theta, wlen, flux, and maybe more)
@@ -72,7 +66,7 @@ class SpectraDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """
         Return the `idx`-th sample from the dataset, which is returned
-        as a dictionary with the keys "theta", "wlen", and "flux".
+        as a dictionary with the keys "theta", and "flux".
         Additional keys (e.g., "error_bars") may be added by the
         transformations in `self.transforms`.
 
@@ -82,8 +76,7 @@ class SpectraDataset(Dataset):
         (dim_theta,) and NOT (1, dim_x) or (1, dim_theta).
         """
 
-        # Get the wavelengths, flux and parameters
-        wlen = self.wlen[idx] if self.wlen.shape[0] > 1 else self.wlen[0]
+        # Get flux and parameters
         flux = self.flux[idx]
         theta = self.theta[idx]
 
@@ -93,7 +86,6 @@ class SpectraDataset(Dataset):
         # to modify the original dataset.
         sample = {
             "theta": theta.copy(),
-            "wlen": wlen.copy(),
             "flux": flux.copy(),
         }
 

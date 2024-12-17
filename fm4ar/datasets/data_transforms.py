@@ -162,7 +162,6 @@ class Subsample(DataTransform):
 
         # Subsample the flux and wavelength
         output["flux"] = x["flux"][idx]
-        output["wlen"] = x["wlen"][idx]
 
         # Subsample the error bars (if available)
         if "error_bars" in output:

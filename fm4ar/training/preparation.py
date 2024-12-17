@@ -68,7 +68,7 @@ def prepare_new(
         wandb.init(
             id=wandb_id,
             config=augmented_config,
-            dir=experiment_dir,
+            dir=str(experiment_dir),
             **config["local"]["wandb"],
         )
 

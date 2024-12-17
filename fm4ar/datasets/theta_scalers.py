@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from fm4ar.datasets.vasist_2023.prior import LOWER, UPPER
+from fm4ar.datasets.icecube.prior import LOWER, UPPER
 
 
 class ThetaScaler(ABC):
@@ -60,6 +60,7 @@ class IdentityScaler(ThetaScaler):
 
     def inverse(self, x: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
         return dict(x)
+
 
 
 class MeanStdScaler(ThetaScaler):
@@ -116,6 +117,30 @@ class MinMaxScaler(ThetaScaler):
         output["theta"] = x["theta"] * self.difference + self.minimum
         return output
 
+class NormalizeToOneScaler(ThetaScaler):
+    """
+    Normalize `theta` to have a unit magnitude (L2 norm of 1).
+    This operation will scale the 3D `theta` vector such that its norm becomes 1.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def forward(self, x: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
+        output = dict(x)
+        # Calculate the L2 norm (magnitude) of theta for each instance
+        norm = np.linalg.norm(x["theta"], keepdims=True)
+        # Avoid division by zero by setting small norms to a small value (e.g., 1e-7)
+        norm = np.maximum(norm, 1e-7)
+        # Normalize each theta to have unit norm
+        output["theta"] = x["theta"] / norm
+        return output
+
+    def inverse(self, x: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
+        # Inverse operation for normalization doesn't really make sense since we lost the original magnitude
+        # Thus, we cannot "denormalize" the theta to its original scale
+        raise NotImplementedError("Inverse operation is not defined for NormalizeToOneScaler.")
+
 
 def get_theta_scaler(config: dict[str, Any]) -> ThetaScaler:
     """
@@ -141,6 +166,8 @@ def get_theta_scaler(config: dict[str, Any]) -> ThetaScaler:
             scaler = MinMaxScaler(minimum=minimum, maximum=maximum)
         case "identity" | "IdentityScaler":
             scaler = IdentityScaler()
+        case "spherical" | "NormalizeToOneScaler":
+            scaler = NormalizeToOneScaler()
         case _:
             raise ValueError(f"Unknown feature scaling method: {method}")
 
